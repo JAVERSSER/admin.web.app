@@ -53,7 +53,7 @@ export default function Layout({
             <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-base shadow-lg shadow-orange-500/20">🍔</div>
             <div>
               <div className="text-sm font-black text-white font-display leading-tight">FoodDash</div>
-              <div className="text-[9px] text-orange-400 font-bold uppercase tracking-widest leading-tight">Orders</div>
+              <div className="text-[9px] text-orange-400 font-bold uppercase tracking-widest leading-tight">{page === "reports" ? "Reports" : "Orders"}</div>
             </div>
           </div>
 
@@ -119,6 +119,11 @@ export default function Layout({
                   <div className="text-sm font-semibold text-white truncate">{adminData?.name}</div>
                   <div className="text-xs text-gray-500 capitalize">{adminData?.role}</div>
                 </div>
+                <button onClick={() => { navTo(page === "reports" ? "orders" : "reports"); setShowUserMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-white/5 transition-colors">
+                  {page === "reports" ? "📦 Admin Panel" : "📊 Report"}
+                </button>
+                <div className="border-t border-white/8" />
                 <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/5 transition-colors">
                   ⏻ Sign Out
                 </button>

@@ -364,9 +364,11 @@ export default function App() {
       toastContainer={<ToastContainer toasts={toasts} />}
       isMobile={isMobile}
     >
-      {/* Mobile: always show orders-only view */}
+      {/* Mobile: orders view, or report when navigated from profile menu */}
       {isMobile ? (
-        <OrdersPage {...ordersPageProps} />
+        page === "reports"
+          ? <ReportsPage orders={orders} riders={riders} isMobile={true} {...pageProps} />
+          : <OrdersPage {...ordersPageProps} />
       ) : (
         <>
           {page === "dashboard"  && <DashboardPage  orders={orders} riders={riders} onOrderClick={() => setPage("orders")} setPage={setPage} onStatusChange={handleOrderStatusChange} onAssignRider={handleAssignRider} onCancelOrder={handleCancelOrder} {...pageProps} />}

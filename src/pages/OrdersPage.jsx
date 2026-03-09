@@ -600,7 +600,7 @@ function MobileOrdersView({ orders, riders, onStatusChange, onAssignRider, onCan
     { key: "pending",   label: "New",       emoji: "⏳", filter: (o) => o.status === "pending" },
     { key: "active",    label: "Active",    emoji: "🔄", filter: (o) => ["confirmed","preparing","rider_assigned","delivering"].includes(o.status) },
     { key: "delivered", label: "Done",      emoji: "✅", filter: (o) => o.status === "delivered" && isToday(o) },
-    { key: "cancelled", label: "Cancelled", emoji: "❌", filter: (o) => o.status === "cancelled" },
+    { key: "cancel", label: "Cancelled", emoji: "❌", filter: (o) => o.status === "cancelled" },
   ];
 
   const currentTab  = TABS.find((t) => t.key === tab);
@@ -624,7 +624,7 @@ function MobileOrdersView({ orders, riders, onStatusChange, onAssignRider, onCan
                 isActive ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30" : "bg-gray-800 text-gray-400"
               }`}
             >
-              {t.emoji} {t.label}
+              {t.emoji}{t.key !== "cancel" && ` ${t.label}`}
               {count > 0 && (
                 <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-white/25 text-white" : "bg-orange-500 text-white"}`}>
                   {count}

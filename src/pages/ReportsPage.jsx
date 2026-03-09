@@ -458,12 +458,14 @@ const TABS = [
 
 const TX_PER_PAGE = 20;
 
-export default function ReportsPage({ orders = [], riders = [], toast }) {
+export default function ReportsPage({ orders = [], riders = [], toast, isMobile = false }) {
   const [tab,       setTab]     = useState("overview");
   const [txSearch,  setTxSearch]  = useState("");
   const [txStatus,  setTxStatus]  = useState("all");
   const [txDate,    setTxDate]    = useState("");   // "YYYY-MM-DD" or ""
   const [txPage,    setTxPage]    = useState(1);
+  const [mobileDate, setMobileDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [tappedBar,  setTappedBar]  = useState(null);
   const [hoveredBar,      setHoveredBar]      = useState(null);
   const [hoveredMonth,    setHoveredMonth]    = useState(null);
   const [hoveredDay30,    setHoveredDay30]    = useState(null);
@@ -474,7 +476,7 @@ export default function ReportsPage({ orders = [], riders = [], toast }) {
   const tMo  = useRef(null);
 
   // Per-tab date range: today | week | month | all
-  const [tabRanges, setTabRanges] = useState({ overview: "all", transactions: "all", items: "all", delivery: "all", customers: "all" });
+  const [tabRanges, setTabRanges] = useState({ overview: "today", transactions: "today", items: "today", delivery: "today", customers: "today" });
   const setRange = (t, v) => setTabRanges(p => ({ ...p, [t]: p[t] === v && v !== "all" ? "all" : v }));
 
   const rangeStartMs = useMemo(() => ({
@@ -736,6 +738,121 @@ export default function ReportsPage({ orders = [], riders = [], toast }) {
     setRange("overview", range);
     setTab("overview");
   };
+
+  // ── MOBILE-ONLY SIMPLIFIED VIEW ─────────────────────────────────────────
+  if (isMobile) {
+    const todayISO     = new Date().toISOString().slice(0, 10);
+    const yesterdayISO = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+    const [y, m, d]    = (mobileDate || todayISO).split("-").map(Number);
+    const dayStart     = new Date(y, m - 1, d).getTime();
+    const dayEnd       = dayStart + 86400000;
+    const dayDelivered = allDelivered.filter(o => { const ms = toMs(o); return ms >= dayStart && ms < dayEnd; });
+    const dayRevenue   = dayDelivered.reduce((s, o) => s + Number(o.total || 0), 0);
+    const dayOrders    = orders.filter(o => { const ms = toMs(o); return ms >= dayStart && ms < dayEnd; });
+    const isToday      = mobileDate === todayISO || !mobileDate;
+    const isYesterday  = mobileDate === yesterdayISO;
+    const label        = isToday ? "Today" : isYesterday ? "Yesterday" : mobileDate;
+
+    return (
+      <div className="space-y-4">
+        {/* Day filter */}
+        <div className="bg-gray-900 border border-white/8 rounded-2xl px-4 py-3 space-y-3">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">📅 Filter by Day</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {[{ l: "Today", v: todayISO }, { l: "Yesterday", v: yesterdayISO }].map(btn => (
+              <button key={btn.l} onClick={() => setMobileDate(btn.v)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  mobileDate === btn.v ? "bg-orange-500 text-white shadow-md" : "bg-gray-800 text-gray-400 border border-white/10"
+                }`}>
+                {btn.l}
+              </button>
+            ))}
+            <input
+              type="date"
+              value={mobileDate}
+              onChange={e => setMobileDate(e.target.value)}
+              className="flex-1 min-w-0 bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-orange-500 [color-scheme:dark]"
+            />
+          </div>
+        </div>
+
+        {/* Revenue card */}
+        <div className="bg-gray-900 border border-orange-500/20 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">💰</span>
+            <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">Revenue — {label}</span>
+          </div>
+          <div className="text-4xl font-black text-orange-400 font-display">${dayRevenue.toFixed(2)}</div>
+          <div className="text-xs text-gray-500 mt-2">{dayDelivered.length} delivered · {dayOrders.length} total orders</div>
+        </div>
+
+        {/* 7-day bar chart */}
+        <div className="bg-gray-900 border border-white/8 rounded-2xl p-4">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Last 7 Days</div>
+          <div className="flex items-end gap-2 h-28">
+            {daily7.map((d, i) => {
+              const isToday  = i === 6;
+              const isTapped = tappedBar === i;
+              const barH     = d.revenue > 0 ? Math.max(16, (d.revenue / maxDay) * 96) : 4;
+              return (
+                <button key={i} onClick={() => setTappedBar(isTapped ? null : i)}
+                  className="flex-1 flex flex-col items-end gap-1">
+                  <div className="w-full rounded-t-xl transition-all duration-300"
+                    style={{
+                      height: `${barH}px`,
+                      background: isTapped || isToday
+                        ? "linear-gradient(to top,#ea580c,#fb923c)"
+                        : d.revenue > 0 ? "linear-gradient(to top,#9a3412,#c2410c)" : "#1f2937",
+                    }} />
+                </button>
+              );
+            })}
+          </div>
+          {/* X-axis labels */}
+          <div className="flex items-center gap-2 mt-2">
+            {daily7.map((d, i) => (
+              <div key={i} className="flex-1 text-center">
+                <div className={`text-[10px] font-semibold ${i === 6 ? "text-orange-400" : tappedBar === i ? "text-white" : "text-gray-500"}`}>{d.day}</div>
+                {d.revenue > 0 && <div className="text-[9px] text-gray-600">${d.revenue.toFixed(0)}</div>}
+              </div>
+            ))}
+          </div>
+          {/* Tapped bar order list */}
+          {tappedBar !== null && (
+            daily7[tappedBar].count > 0 ? (
+              <div className="mt-3 border border-orange-500/30 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 bg-orange-500/10 border-b border-orange-500/20">
+                  <div className="text-xs font-bold text-orange-400">
+                    {daily7[tappedBar].fullDate} · {daily7[tappedBar].count} order{daily7[tappedBar].count > 1 ? "s" : ""} · ${daily7[tappedBar].revenue.toFixed(2)}
+                  </div>
+                </div>
+                <div className="divide-y divide-white/5 max-h-52 overflow-y-auto">
+                  {daily7[tappedBar].orders.map((o, oi) => {
+                    const cfg = STATUS_CONFIG[o.status] || {};
+                    return (
+                      <div key={oi} className="flex items-center gap-3 px-3 py-2.5">
+                        <span className="text-base shrink-0">{cfg.icon || "📦"}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white truncate">{o.customer || o.customerName || "Customer"}</div>
+                          <div className="text-xs text-gray-500 truncate">{(o.items || []).map(it => `${it.qty||1}× ${it.name}`).join(", ")}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-bold text-orange-400">${Number(o.total||0).toFixed(2)}</div>
+                          <div className={`text-[10px] font-semibold ${cfg.color || "text-gray-400"}`}>{cfg.label || o.status}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 text-center text-xs text-gray-600 py-2">No orders on {daily7[tappedBar].fullDate}</div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
