@@ -23,14 +23,14 @@ import RidersPage from "./pages/RidersPage";
 import CustomersPage from "./pages/CustomersPage";
 import ReportsPage from "./pages/ReportsPage";
 import { PromotionsPage, LogsPage, HistoryPage, SettingsPage } from "./pages/OtherPages";
-import LiveMapPage from "./pages/LiveMapPage";
+// import LiveMapPage from "./pages/LiveMapPage";
 
 // ── Firestore service functions ───────────────────────────────────────────────
 import {
   subscribeOrders, updateOrderStatus, assignRider, cancelOrder,
   subscribeMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, toggleMenuItemAvailability,
-  subscribeRiders, approveRider, suspendRider, activateRider,
-  subscribeCustomers, blockCustomer, unblockCustomer,
+  subscribeRiders, approveRider, suspendRider, activateRider, removeRider,
+  subscribeCustomers, blockCustomer, unblockCustomer, removeCustomer,
   subscribePromoCodes, addPromoCode, deletePromoCode, togglePromoCode,
   subscribeActivityLogs,
   sendPushNotification,
@@ -280,6 +280,11 @@ export default function App() {
     try { await activateRider(riderId); } catch (e) { console.error(e); }
   };
 
+  const handleRemoveRider = async (riderId) => {
+    setRiders((prev) => prev.filter((r) => r.id !== riderId));
+    try { await removeRider(riderId); } catch (e) { console.error(e); }
+  };
+
   // ── CUSTOMER handlers ─────────────────────────────────────────────────────
   const handleBlockCustomer = async (customerId) => {
     setCustomers((prev) => prev.map((c) => c.id === customerId ? { ...c, blocked: true } : c));
@@ -289,6 +294,11 @@ export default function App() {
   const handleUnblockCustomer = async (customerId) => {
     setCustomers((prev) => prev.map((c) => c.id === customerId ? { ...c, blocked: false } : c));
     try { await unblockCustomer(customerId); } catch (e) { console.error(e); }
+  };
+
+  const handleRemoveCustomer = async (customerId) => {
+    setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+    try { await removeCustomer(customerId); } catch (e) { console.error(e); }
   };
 
   // ── PROMO handlers ────────────────────────────────────────────────────────
@@ -373,10 +383,10 @@ export default function App() {
         <>
           {page === "dashboard"  && <DashboardPage  orders={orders} riders={riders} onOrderClick={() => setPage("orders")} setPage={setPage} onStatusChange={handleOrderStatusChange} onAssignRider={handleAssignRider} onCancelOrder={handleCancelOrder} {...pageProps} />}
           {page === "orders"     && <OrdersPage     {...ordersPageProps} />}
-          {page === "livemap"    && <LiveMapPage     riders={riders} orders={orders} />}
+          {/* {page === "livemap"    && <LiveMapPage     riders={riders} orders={orders} />} */}
           {page === "menu"       && <MenuPage        items={menu} onAdd={handleAddMenuItem} onEdit={handleEditMenuItem} onDelete={handleDeleteMenuItem} onToggle={handleToggleMenuItem} {...pageProps} />}
-          {page === "riders"     && <RidersPage      riders={riders} onApprove={handleApproveRider} onSuspend={handleSuspendRider} onActivate={handleActivateRider} {...pageProps} />}
-          {page === "customers"  && <CustomersPage   customers={customers} orders={orders} onBlock={handleBlockCustomer} onUnblock={handleUnblockCustomer} {...pageProps} />}
+          {page === "riders"     && <RidersPage      riders={riders} orders={orders} onApprove={handleApproveRider} onSuspend={handleSuspendRider} onActivate={handleActivateRider} onRemove={handleRemoveRider} {...pageProps} />}
+          {page === "customers"  && <CustomersPage   customers={customers} orders={orders} onBlock={handleBlockCustomer} onUnblock={handleUnblockCustomer} onRemove={handleRemoveCustomer} {...pageProps} />}
           {page === "reports"    && <ReportsPage     orders={orders} riders={riders} {...pageProps} />}
           {page === "promotions" && <PromotionsPage  promos={promos} onAdd={handleAddPromo} onDelete={handleDeletePromo} onToggle={handleTogglePromo} {...pageProps} />}
           {page === "logs"       && <LogsPage        logs={logs} {...pageProps} />}

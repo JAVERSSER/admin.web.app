@@ -1,5 +1,5 @@
 // src/pages/RidersPage.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button, Card, Modal, Input, StatusBadge, ConfirmDialog, SearchInput, Pagination } from "../components/UI";
 import { RIDER_STATUS_CONFIG } from "../utils/mockData";
 
@@ -112,13 +112,21 @@ function RiderDetailModal({ rider, onClose, onApprove, onSuspend, onActivate, to
 
 const PER_PAGE = 10;
 
-export default function RidersPage({ riders, onApprove, onSuspend, onActivate, toast }) {
-  const [selected, setSelected] = useState(null);
-  const [search, setSearch] = useState("");
+export default function RidersPage({ riders, orders = [], onApprove, onSuspend, onActivate, onRemove, toast }) {
+  const [selected,   setSelected]   = useState(null);
+  const [confirming, setConfirming] = useState(null);
+  const [search,      setSearch]     = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filtered = riders.filter(r => {
+  // Compute real deliveries count + earnings per rider from orders
+  const enriched = useMemo(() => riders.map(r => {
+    const riderOrders = orders.filter(o => o.riderId === r.id && o.status === "delivered");
+    const earnings    = riderOrders.reduce((s, o) => s + Number(o.deliveryFee || 0), 0);
+    return { ...r, deliveries: riderOrders.length, earnings: earnings.toFixed(2) };
+  }), [riders, orders]);
+
+  const filtered = enriched.filter(r => {
     const q = search.toLowerCase();
     const matchSearch = !q || r.name.toLowerCase().includes(q) || r.phone.includes(q);
     const matchStatus =
@@ -132,11 +140,11 @@ export default function RidersPage({ riders, onApprove, onSuspend, onActivate, t
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const stats = [
-    { label: "Total",      value: riders.length,                                color: "text-white" },
-    { label: "Online",     value: riders.filter(r => r.status === "online").length,     color: "text-emerald-400" },
-    { label: "Delivering", value: riders.filter(r => r.status === "delivering").length, color: "text-sky-400" },
-    { label: "Offline",    value: riders.filter(r => r.status === "offline").length,    color: "text-gray-500" },
-    { label: "Pending",    value: riders.filter(r => !r.approved).length,               color: "text-amber-400" },
+    { label: "Total",      value: enriched.length,                                        color: "text-white" },
+    { label: "Online",     value: enriched.filter(r => r.status === "online").length,     color: "text-emerald-400" },
+    { label: "Delivering", value: enriched.filter(r => r.status === "delivering").length, color: "text-sky-400" },
+    { label: "Offline",    value: enriched.filter(r => r.status === "offline").length,    color: "text-gray-500" },
+    { label: "Pending",    value: enriched.filter(r => !r.approved).length,               color: "text-amber-400" },
   ];
 
   return (
@@ -216,6 +224,7 @@ export default function RidersPage({ riders, onApprove, onSuspend, onActivate, t
                         {!r.approved && <Button variant="success" size="sm" onClick={async () => { await onApprove(r.id); toast.success(`${r.name} approved`); }}>Approve</Button>}
                         {r.approved && !r.suspended && <Button variant="danger" size="sm" onClick={() => setSelected(r)}>Suspend</Button>}
                         {r.suspended && <Button variant="warning" size="sm" onClick={async () => { await onActivate(r.id); toast.success(`${r.name} reactivated`); }}>Activate</Button>}
+                        <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10" onClick={() => setConfirming(r)}>🗑️</Button>
                       </div>
                     </td>
                   </tr>
@@ -231,6 +240,26 @@ export default function RidersPage({ riders, onApprove, onSuspend, onActivate, t
           </div>
         )}
       </Card>
+
+      {confirming && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setConfirming(null)}>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="text-2xl mb-3">🗑️</div>
+            <div className="text-base font-bold text-white mb-1">Remove Rider</div>
+            <div className="text-sm text-gray-400 mb-5">
+              Remove <span className="text-white font-semibold">{confirming.name}</span>? This will permanently delete their rider account.
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1" onClick={() => setConfirming(null)}>Cancel</Button>
+              <Button variant="danger" className="flex-1" onClick={async () => {
+                await onRemove(confirming.id);
+                toast.success(`${confirming.name} removed`);
+                setConfirming(null);
+              }}>Remove</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selected && (
         <RiderDetailModal

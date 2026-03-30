@@ -84,7 +84,7 @@ export const RIDER_STATUS_CONFIG = {
 export const NAV_ITEMS = [
   { id: "dashboard",   label: "Dashboard",      icon: "📊", section: "main"     },
   { id: "orders",      label: "Orders",         icon: "📦", section: "main"     },
-  { id: "livemap",     label: "Live Map",       icon: "🗺️", section: "main"     },
+  // { id: "livemap",     label: "Live Map",       icon: "🗺️", section: "main"     },
   { id: "menu",        label: "Menu",           icon: "🍔", section: "main"     },
   { id: "riders",      label: "Riders",         icon: "🛵", section: "people"   },
   { id: "customers",   label: "Customers",      icon: "👥", section: "people"   },

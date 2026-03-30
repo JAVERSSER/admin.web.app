@@ -1,9 +1,11 @@
 // src/pages/CustomersPage.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button, Card, Modal, ConfirmDialog, SearchInput, Pagination } from "../components/UI";
 
 function CustomerDetailModal({ customer, orders, onClose, onBlock, onUnblock, toast }) {
-  const customerOrders = orders.filter(o => o.customer === customer.name);
+  const customerOrders = orders.filter(o =>
+    o.customerId === customer.id || o.customerId === customer.uid || o.customer === customer.name
+  );
 
   return (
     <Modal open title={`Customer: ${customer.name}`} onClose={onClose} size="lg">
@@ -72,14 +74,39 @@ function CustomerDetailModal({ customer, orders, onClose, onBlock, onUnblock, to
   );
 }
 
-export default function CustomersPage({ customers, orders, onBlock, onUnblock, toast }) {
-  const [selected, setSelected] = useState(null);
+export default function CustomersPage({ customers, orders, onBlock, onUnblock, onRemove, toast }) {
+  const [selected,   setSelected]   = useState(null);
+  const [confirming, setConfirming] = useState(null); // customer to remove
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const PER_PAGE = 8;
 
-  const filtered = customers.filter(c => {
+  // Enrich each customer with computed stats from the orders array
+  const enriched = useMemo(() => customers.map(c => {
+    const cOrders = orders.filter(o =>
+      o.customerId === c.id || o.customerId === c.uid || o.customer === c.name
+    );
+    const spent = cOrders
+      .filter(o => o.status === "delivered")
+      .reduce((s, o) => s + Number(o.total || 0), 0);
+    const joined = c.createdAt
+      ? (typeof c.createdAt === "string"
+          ? new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+          : c.createdAt.toDate?.().toLocaleDateString("en-US", { month: "short", year: "numeric" }) ?? "—")
+      : "—";
+    return {
+      ...c,
+      name:   c.name   || c.displayName || "Unknown",
+      email:  c.email  || "—",
+      phone:  c.phone  || "—",
+      orders: cOrders.length,
+      spent:  spent.toFixed(2),
+      joined,
+    };
+  }), [customers, orders]);
+
+  const filtered = enriched.filter(c => {
     const q = search.toLowerCase();
     const matchSearch = !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q);
     const matchStatus = statusFilter === "all" || (statusFilter === "active" ? !c.blocked : c.blocked);
@@ -90,7 +117,7 @@ export default function CustomersPage({ customers, orders, onBlock, onUnblock, t
 
   const handleExport = () => {
     const csv = ["Name,Email,Phone,Orders,Spent,Joined,Status",
-      ...customers.map(c => `${c.name},${c.email},${c.phone},${c.orders},${c.spent},${c.joined},${c.blocked?"Blocked":"Active"}`)
+      ...enriched.map(c => `${c.name},${c.email},${c.phone},${c.orders},${c.spent},${c.joined},${c.blocked?"Blocked":"Active"}`)
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -103,10 +130,10 @@ export default function CustomersPage({ customers, orders, onBlock, onUnblock, t
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total Customers", value: customers.length,                              color: "text-white"       },
-          { label: "Active",          value: customers.filter(c=>!c.blocked).length,        color: "text-emerald-400" },
-          { label: "Blocked",         value: customers.filter(c=>c.blocked).length,         color: "text-red-400"     },
-          { label: "Total Revenue",   value: `$${customers.reduce((s,c)=>s+c.spent,0).toFixed(0)}`, color: "text-orange-400" },
+          { label: "Total Customers", value: enriched.length,                                color: "text-white"       },
+          { label: "Active",          value: enriched.filter(c=>!c.blocked).length,         color: "text-emerald-400" },
+          { label: "Blocked",         value: enriched.filter(c=>c.blocked).length,          color: "text-red-400"     },
+          { label: "Total Revenue",   value: `$${enriched.reduce((s,c)=>s+Number(c.spent||0),0).toFixed(0)}`, color: "text-orange-400" },
         ].map((s, i) => (
           <div key={i} className="bg-gray-900 border border-white/8 rounded-2xl p-4 flex items-center gap-3">
             <div className={`text-2xl font-black font-display ${s.color}`}>{s.value}</div>
@@ -166,6 +193,7 @@ export default function CustomersPage({ customers, orders, onBlock, onUnblock, t
                       ) : (
                         <Button variant="danger" size="sm" onClick={async () => { await onBlock(c.id); toast.success(`${c.name} blocked`); }}>Block</Button>
                       )}
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10" onClick={() => setConfirming(c)}>🗑️</Button>
                     </div>
                   </td>
                 </tr>
@@ -178,6 +206,27 @@ export default function CustomersPage({ customers, orders, onBlock, onUnblock, t
           <Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
         </div>
       </Card>
+
+      {/* Remove confirm dialog */}
+      {confirming && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setConfirming(null)}>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="text-2xl mb-3">🗑️</div>
+            <div className="text-base font-bold text-white mb-1">Remove Customer</div>
+            <div className="text-sm text-gray-400 mb-5">
+              Remove <span className="text-white font-semibold">{confirming.name}</span>? This will permanently delete their account from the system.
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1" onClick={() => setConfirming(null)}>Cancel</Button>
+              <Button variant="danger" className="flex-1" onClick={async () => {
+                await onRemove(confirming.id);
+                toast.success(`${confirming.name} removed`);
+                setConfirming(null);
+              }}>Remove</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selected && (
         <CustomerDetailModal

@@ -191,8 +191,16 @@ export const blockCustomer = async (customerId) => {
   await updateDoc(doc(db, "users", customerId), { blocked: true });
 };
 
+export const removeRider = async (riderId) => {
+  await deleteDoc(doc(db, "riders", riderId));
+};
+
 export const unblockCustomer = async (customerId) => {
   await updateDoc(doc(db, "users", customerId), { blocked: false });
+};
+
+export const removeCustomer = async (customerId) => {
+  await deleteDoc(doc(db, "users", customerId));
 };
 
 // ─── PROMO CODES ──────────────────────────────────────────────────────────────

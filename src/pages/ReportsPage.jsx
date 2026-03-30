@@ -462,7 +462,9 @@ export default function ReportsPage({ orders = [], riders = [], toast, isMobile 
   const [tab,       setTab]     = useState("overview");
   const [txSearch,  setTxSearch]  = useState("");
   const [txStatus,  setTxStatus]  = useState("all");
-  const [txDate,    setTxDate]    = useState("");   // "YYYY-MM-DD" or ""
+  const [dateFrom,     setDateFrom]     = useState("");  // "YYYY-MM-DD"
+  const [dateTo,       setDateTo]       = useState("");  // "YYYY-MM-DD"
+  const [quickFilter,  setQuickFilter]  = useState("all");
   const [txPage,    setTxPage]    = useState(1);
   const [mobileDate, setMobileDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [tappedBar,  setTappedBar]  = useState(null);
@@ -658,19 +660,19 @@ export default function ReportsPage({ orders = [], riders = [], toast, isMobile 
         (o.customer || o.customerName || "").toLowerCase().includes(q) ||
         (o.riderName || "").toLowerCase().includes(q);
       let matchDate = true;
-      if (txDate) {
+      if (dateFrom || dateTo) {
         const ms = toMs(o);
         if (!ms) {
           matchDate = false;
         } else {
-          const od = new Date(ms);
-          const orderDateStr = `${od.getFullYear()}-${String(od.getMonth()+1).padStart(2,"0")}-${String(od.getDate()).padStart(2,"0")}`;
-          matchDate = orderDateStr === txDate;
+          const dayStart = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).getTime(); };
+          if (dateFrom && ms < dayStart(dateFrom)) matchDate = false;
+          if (dateTo   && ms >= dayStart(dateTo) + 86400000) matchDate = false;
         }
       }
       return matchStatus && matchSearch && matchDate;
     });
-  }, [orders, txSearch, txStatus, txDate]);
+  }, [orders, txSearch, txStatus, dateFrom, dateTo]);
 
   const txPaginated  = txFiltered.slice((txPage - 1) * TX_PER_PAGE, txPage * TX_PER_PAGE);
   const txTotalPages = Math.ceil(txFiltered.length / TX_PER_PAGE);
@@ -882,41 +884,75 @@ export default function ReportsPage({ orders = [], riders = [], toast, isMobile 
           onClick={() => jumpToOverview("all")} />
       </div>
 
-      {/* ── DATE FILTER — always visible ─────────────────────────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap bg-gray-900 border border-white/8 rounded-2xl px-4 py-3">
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-wide mr-1">📅 Filter by Date</span>
-        {[
-          { label: "All",       value: "" },
-          { label: "Today",     value: todayStr() },
-          { label: "Yesterday", value: yesterdayStr() },
-        ].map(btn => (
-          <button
-            key={btn.label}
-            onClick={() => { setTxDate(btn.value); setTxPage(1); setTab("transactions"); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              txDate === btn.value
-                ? "bg-orange-500 text-white shadow-md"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700 border border-white/10"
-            }`}
-          >
-            {btn.label}
-          </button>
-        ))}
-        <input
-          type="date"
-          value={txDate}
-          onChange={e => { setTxDate(e.target.value); setTxPage(1); setTab("transactions"); }}
-          className="bg-gray-800 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-orange-500 [color-scheme:dark]"
-        />
-        {txDate && (
-          <button
-            onClick={() => { setTxDate(""); setTxPage(1); }}
-            className="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
-          >
-            ✕ Clear
-          </button>
-        )}
-        {txDate && <span className="text-xs text-orange-400 font-medium ml-auto">Showing: {txDate}</span>}
+      {/* ── DATE RANGE FILTER — always visible ───────────────────────────────── */}
+      <div className="bg-gray-900 border border-white/8 rounded-2xl px-4 py-3 space-y-3">
+        {/* Quick buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">📅 Date Range</span>
+          {[
+            { label: "All",        key: "all"       },
+            { label: "Today",      key: "today"     },
+            { label: "Yesterday",  key: "yesterday" },
+            { label: "This Week",  key: "week"      },
+            { label: "This Month", key: "month"     },
+          ].map(btn => (
+            <button
+              key={btn.key}
+              onClick={() => {
+                const t = todayStr(), y = yesterdayStr();
+                const wk = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0,10); })();
+                const mo = (() => { const d = new Date(); d.setDate(d.getDate() - 29); return d.toISOString().slice(0,10); })();
+                const map = { all: ["",""], today: [t,t], yesterday: [y,y], week: [wk,t], month: [mo,t] };
+                const [f, to] = map[btn.key];
+                setDateFrom(f); setDateTo(to); setQuickFilter(btn.key);
+                setTxPage(1); setTab("transactions");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                quickFilter === btn.key
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700 border border-white/10"
+              }`}
+            >
+              {btn.label}
+            </button>
+          ))}
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); setQuickFilter("all"); setTxPage(1); }}
+              className="ml-auto text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+        {/* From / To pickers */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-semibold w-8">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={e => { setDateFrom(e.target.value); setQuickFilter("custom"); setTxPage(1); setTab("transactions"); }}
+              className="bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-orange-500 [color-scheme:dark]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-semibold w-4">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={e => { setDateTo(e.target.value); setQuickFilter("custom"); setTxPage(1); setTab("transactions"); }}
+              className="bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-orange-500 [color-scheme:dark]"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <span className="text-xs text-orange-400 font-medium">
+              {dateFrom && dateTo ? `${dateFrom} → ${dateTo}` : dateFrom ? `From ${dateFrom}` : `Until ${dateTo}`}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── TABS + PRINT BUTTON ──────────────────────────────────────────────── */}
