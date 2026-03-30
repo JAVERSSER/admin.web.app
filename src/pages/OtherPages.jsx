@@ -4,8 +4,18 @@ import { Button, Card, Modal, Input, Select, Toggle, ConfirmDialog } from "../co
 import { STATUS_CONFIG } from "../utils/mockData";
 import { subscribeShopSettings, saveShopSettings } from "../services/firestoreService";
 
+// Consistent 8-digit number derived from Firestore ID (same logic as OrdersPage)
+const fmtOrder = (o) => {
+  if (o?.orderNumber) return o.orderNumber;
+  const id = o?.id || "";
+  let n = 0;
+  for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0;
+  return String((n % 90000000) + 10000000);
+};
+
 // ── Print receipt (same as OrdersPage) ───────────────────────────────────────
 function printOrderReceipt(order) {
+  const num = fmtOrder(order);
   const rows = (order.items || []).map(i =>
     `<tr>
       <td style="padding:4px 8px;border-bottom:1px solid #eee">${i.name}</td>
@@ -13,7 +23,7 @@ function printOrderReceipt(order) {
       <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">$${(Number(i.price||0)*Number(i.qty||1)).toFixed(2)}</td>
     </tr>`
   ).join("");
-  const html = `<!DOCTYPE html><html><head><title>Receipt #${order.id}</title>
+  const html = `<!DOCTYPE html><html><head><title>Receipt #${num}</title>
   <style>
     body{font-family:monospace;max-width:320px;margin:0 auto;padding:20px;color:#111}
     h2{text-align:center;margin:0 0 4px}.sub{text-align:center;font-size:12px;color:#555;margin-bottom:12px}
@@ -26,7 +36,7 @@ function printOrderReceipt(order) {
   </style></head><body>
   <h2>🍔 FoodDash</h2><div class="sub">Order Receipt</div>
   <div class="info">
-    <b>Order #:</b> ${order.id}<br>
+    <b>Order #:</b> ${num}<br>
     <b>Date:</b> ${order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : new Date().toLocaleString()}<br>
     <b>Customer:</b> ${order.customer || order.customerName || "—"}<br>
     <b>Phone:</b> ${order.phone || "—"}<br>

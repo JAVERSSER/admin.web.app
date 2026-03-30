@@ -157,7 +157,7 @@ const fmtOrder = (o) => {
   const id = o?.id || "";
   let n = 0;
   for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0;
-  return (n % 900000) + 100000;
+  return String((n % 90000000) + 10000000);
 };
 
 // ── Print receipt in a clean new window ──────────────────────────────────────

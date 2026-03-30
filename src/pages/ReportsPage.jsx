@@ -49,7 +49,7 @@ const fmtOrder = (o) => {
   const id = o?.id || "";
   let n = 0;
   for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0;
-  return (n % 900000) + 100000;
+  return String((n % 90000000) + 10000000);
 };
 
 // ── Shared formatters ────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ function RangeTabs({ value, onChange }) {
 function OrderDetailModal({ order: o, onClose }) {
   const cfg = STATUS_CONFIG[o.status] || {};
   return (
-    <Modal open title={`Order #${(o.id || "").slice(-8).toUpperCase()}`} onClose={onClose} size="md">
+    <Modal open title={`Order #${fmtOrder(o)}`} onClose={onClose} size="md">
       {/* Status + date */}
       <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/8">
         <StatusBadge status={o.status} config={STATUS_CONFIG} />
