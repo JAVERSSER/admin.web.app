@@ -52,7 +52,7 @@ export default function Layout({
           <div className="flex items-center gap-2.5 flex-1">
             <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-base shadow-lg shadow-orange-500/20">🍔</div>
             <div>
-              <div className="text-sm font-black text-white font-display leading-tight">FoodDash</div>
+              <div className="text-sm font-black text-white font-display leading-tight">DEP Food</div>
               <div className="text-[9px] text-orange-400 font-bold uppercase tracking-widest leading-tight">{page === "reports" ? "Reports" : "Orders"}</div>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function Layout({
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-lg shadow-lg shadow-orange-500/30">🍔</div>
             <div>
-              <div className="text-base font-black text-white font-display">FoodDash</div>
+              <div className="text-base font-black text-white font-display">DEP Food</div>
               <div className="text-[10px] text-gray-500 uppercase tracking-widest">Admin Panel</div>
             </div>
           </div>

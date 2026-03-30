@@ -184,7 +184,7 @@ function printOrderReceipt(order) {
     .footer{text-align:center;font-size:11px;color:#888;margin-top:16px;border-top:1px dashed #ccc;padding-top:10px}
     @media print{button{display:none}}
   </style></head><body>
-  <h2>🍔 FoodDash</h2>
+  <h2>🍔 DEP Food</h2>
   <div class="sub">Order Receipt</div>
   <div class="info">
     <b>Order #:</b> ${displayNum}<br>
@@ -207,7 +207,7 @@ function printOrderReceipt(order) {
   </table>
   ${order.riderName?`<div class="info"><b>Rider:</b> ${order.riderName}</div>`:""}
   ${order.note?`<div class="info"><b>Note:</b> ${order.note}</div>`:""}
-  <div class="footer">Thank you for your order!<br>FoodDash · Phnom Penh</div>
+  <div class="footer">Thank you for your order!<br>DEP Food · Phnom Penh</div>
   <br><button onclick="window.print()">🖨️ Print</button>
   </body></html>`;
 

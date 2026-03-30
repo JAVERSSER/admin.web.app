@@ -219,9 +219,13 @@ export default function CustomersPage({ customers, orders, onBlock, onUnblock, o
             <div className="flex gap-3">
               <Button variant="ghost" className="flex-1" onClick={() => setConfirming(null)}>Cancel</Button>
               <Button variant="danger" className="flex-1" onClick={async () => {
-                await onRemove(confirming.id);
-                toast.success(`${confirming.name} removed`);
-                setConfirming(null);
+                try {
+                  await onRemove(confirming.id);
+                  toast.success(`${confirming.name} removed`);
+                  setConfirming(null);
+                } catch {
+                  toast.error("Failed to remove. Please try again.");
+                }
               }}>Remove</Button>
             </div>
           </div>

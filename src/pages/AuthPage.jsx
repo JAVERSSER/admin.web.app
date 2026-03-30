@@ -35,7 +35,7 @@ function Logo() {
       <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center text-3xl shadow-2xl shadow-orange-500/30 mb-4">
         🍔
       </div>
-      <h1 className="text-3xl font-black text-white font-display tracking-tight">FoodDash</h1>
+      <h1 className="text-3xl font-black text-white font-display tracking-tight">DEP Food</h1>
       <p className="text-gray-500 text-xs mt-1 tracking-widest uppercase">Admin Panel</p>
     </div>
   );
@@ -298,7 +298,7 @@ function RegisterForm({ onSwitchLogin }) {
         <Input
           label="Restaurant / Shop Name"
           type="text"
-          placeholder="FoodDash Kitchen"
+          placeholder="DEP Food Kitchen"
           value={form.shopName}
           error={errors.shopName}
           onChange={field("shopName")}
@@ -416,7 +416,7 @@ export default function AuthPage() {
         </div>
 
         <p className="text-center text-xs text-gray-600 mt-5">
-          FoodDash Admin © {new Date().getFullYear()} · React + Tailwind CSS + Firebase
+          DEP Food Admin © {new Date().getFullYear()} · React + Tailwind CSS + Firebase
         </p>
       </div>
     </div>

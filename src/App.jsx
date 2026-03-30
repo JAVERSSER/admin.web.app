@@ -281,8 +281,8 @@ export default function App() {
   };
 
   const handleRemoveRider = async (riderId) => {
+    await removeRider(riderId);
     setRiders((prev) => prev.filter((r) => r.id !== riderId));
-    try { await removeRider(riderId); } catch (e) { console.error(e); }
   };
 
   // ── CUSTOMER handlers ─────────────────────────────────────────────────────
@@ -297,8 +297,8 @@ export default function App() {
   };
 
   const handleRemoveCustomer = async (customerId) => {
+    await removeCustomer(customerId);
     setCustomers((prev) => prev.filter((c) => c.id !== customerId));
-    try { await removeCustomer(customerId); } catch (e) { console.error(e); }
   };
 
   // ── PROMO handlers ────────────────────────────────────────────────────────
@@ -337,7 +337,7 @@ export default function App() {
       <div className="min-h-screen bg-gray-950 flex items-center justify-center flex-col gap-4">
         <div className="text-4xl">🍔</div>
         <Spinner size="lg" />
-        <div className="text-gray-500 text-sm">Loading FoodDash...</div>
+        <div className="text-gray-500 text-sm">Loading DEP Food...</div>
       </div>
     );
   }

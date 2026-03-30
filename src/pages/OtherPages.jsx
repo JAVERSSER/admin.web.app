@@ -34,7 +34,7 @@ function printOrderReceipt(order) {
     .footer{text-align:center;font-size:11px;color:#888;margin-top:16px;border-top:1px dashed #ccc;padding-top:10px}
     @media print{button{display:none}}
   </style></head><body>
-  <h2>🍔 FoodDash</h2><div class="sub">Order Receipt</div>
+  <h2>🍔 DEP Food</h2><div class="sub">Order Receipt</div>
   <div class="info">
     <b>Order #:</b> ${num}<br>
     <b>Date:</b> ${order.createdAt?.toDate ? order.createdAt.toDate().toLocaleString() : new Date().toLocaleString()}<br>
@@ -56,7 +56,7 @@ function printOrderReceipt(order) {
   </table>
   ${order.riderName?`<div class="info"><b>Rider:</b> ${order.riderName}</div>`:""}
   ${order.note?`<div class="info"><b>Note:</b> ${order.note}</div>`:""}
-  <div class="footer">Thank you for your order!<br>FoodDash · Phnom Penh</div>
+  <div class="footer">Thank you for your order!<br>DEP Food · Phnom Penh</div>
   <br><button onclick="window.print()">🖨️ Print</button>
   </body></html>`;
   const w = window.open("", "_blank", "width=400,height=650");
@@ -408,7 +408,7 @@ export function HistoryPage({ orders, toast }) {
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
 export function SettingsPage({ toast }) {
   const DEFAULTS = {
-    shopName: "FoodDash Kitchen", emoji: "🍔", phone: "+855 12 345 678",
+    shopName: "DEP Food Kitchen", emoji: "🍔", phone: "+855 12 345 678",
     address: "St. 271, Phnom Penh", description: "Best food delivery in Phnom Penh",
     deliveryFee: "1.5", deliveryTime: "15-30", freeDeliveryAbove: "20",
     minOrder: "5", taxRate: "0", isOpen: true,
